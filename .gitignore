@@ -1,0 +1,111 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+python/
+
+# Flask-specific
+instance/
+.webassets-cache
+.env
+.flaskenv
+
+# Apache Airflow-specific
+# -----------------------
+# Airflow home directory (if you keep it inside the project)
+airflow.db
+airflow.cfg
+airflow-*.err
+airflow-*.out
+airflow-*.log
+airflow-*.pid
+/logs/
+/unittests.cfg
+
+# If you use Celery Executor
+celerybeat-schedule
+celerybeat.pid
+
+# If you use LocalExecutor
+/db/
+
+# Environment variables / secrets
+.env
+.secret
+secrets.json
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing and coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.pyo
+.pytest_cache/
+.pytest/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Database (SQLite, etc.)
+*.sqlite3
+*.db
+
+# PostgreSQL
+# -----------------------
+# Local data directory (if you run Postgres in a local folder)
+/postgres_data/
+/pgdata/
+
+# PostgreSQL lock files and sockets
+*.stackdump
+.s.PGSQL.*
+
+# Database backup and dump files
+*.sql
+*.dump
+*.sql.gz
+*.backup
+
+# Common Postgres management tool artifacts
+.pgpass

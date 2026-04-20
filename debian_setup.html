@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Airflow ETL Setup Guide (Debian)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { margin-top: 30px; color: #0056b3; }
+        code { background: #f4f4f4; border-radius: 3px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #ddd; }
+        .note { background: #e7f3fe; border-left: 6px solid #2196F3; padding: 10px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Airflow ETL Setup Guide (Debian/Linux)</h1>
+    <p>This guide provides a condensed list of commands to set up a stable Apache Airflow environment on a Debian-based system (Proxmox LXC, VM, or Azure Linux Container).</p>
+
+    <div class="note">
+        <strong>Note:</strong> On Linux, the standard <code>psycopg2-binary</code> driver is stable and does not require the workarounds used on macOS.
+    </div>
+
+    <h2>1. System Dependencies</h2>
+    <p>Install Python environment tools and PostgreSQL C-headers.</p>
+    <pre><code>sudo apt update && sudo apt install -y python3-venv python3-pip libpq-dev postgresql postgresql-contrib</code></pre>
+
+    <h2>2. Database Setup</h2>
+    <p>Create the metadata database and a mock source database for testing.</p>
+    <pre><code># Enter Postgres as the superuser
+sudo -u postgres psql &lt;&lt;EOF
+CREATE USER airflow_admin WITH PASSWORD 'airflow';
+CREATE DATABASE airflow_db OWNER airflow_admin;
+CREATE DATABASE mock_database OWNER airflow_admin;
+ALTER ROLE airflow_admin CONNECTION LIMIT -1;
+EOF</code></pre>
+
+    <h2>3. Python Virtual Environment</h2>
+    <p>Create a clean environment and install Airflow with the Postgres provider and the standard driver.</p>
+    <pre><code>python3 -m venv ~/airflow_venv
+source ~/airflow_venv/bin/activate
+
+# Install Airflow, Postgres Provider, and Psycopg2 Driver
+pip install "apache-airflow[postgres]==2.10.0" psycopg2-binary \
+  --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.0/constraints-3.12.txt"</code></pre>
+
+    <h2>4. Environment Configuration</h2>
+    <p>Define the connection string. Add these to <code>~/.bashrc</code> to make them permanent.</p>
+    <pre><code>export AIRFLOW_HOME=~/airflow
+export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://airflow_admin:airflow@localhost:5432/airflow_db"
+
+# Initialize the metadata database
+airflow db migrate</code></pre>
+
+    <h2>5. Create Admin User</h2>
+    <pre><code>airflow users create \
+    --username admin \
+    --firstname Saif \
+    --lastname Uddin \
+    --role Admin \
+    --email admin@example.com</code></pre>
+
+    <h2>6. Populate Mock Source Data</h2>
+    <pre><code>psql -d mock_database -h localhost -U airflow_admin &lt;&lt;EOF
+CREATE TABLE IF NOT EXISTS source_orders (
+    order_id INT PRIMARY KEY,
+    customer_name VARCHAR(100),
+    order_total NUMERIC,
+    order_date DATE
+);
+
+INSERT INTO source_orders (order_id, customer_name, order_total, order_date) VALUES
+(1, 'Alice Smith', 150.00, '2026-04-10'),
+(2, 'Bob Jones', 85.50, '2026-04-11'),
+(3, 'Charlie Brown', 210.25, '2026-04-12')
+ON CONFLICT DO NOTHING;
+EOF</code></pre>
+
+    <h2>7. Running Airflow</h2>
+    <p>Open two terminal sessions (or use <code>tmux</code>).</p>
+    <pre><code># Session 1: The UI
+airflow webserver --port 8080
+
+# Session 2: The Orchestrator
+airflow scheduler</code></pre>
+
+    <h2>8. Airflow UI Connections</h2>
+    <p>Log in at <code>http://&lt;server_ip&gt;:8080</code> and navigate to <strong>Admin > Connections</strong>. Add:</p>
+    <ul>
+        <li><strong>Source:</strong> Conn Id: <code>source_db_conn</code>, Type: <code>Postgres</code>, DB: <code>mock_database</code></li>
+        <li><strong>Dest:</strong> Conn Id: <code>my_postgres_conn</code>, Type: <code>Postgres</code>, DB: <code>airflow_db</code></li>
+    </ul>
+
+</body>
+</html>

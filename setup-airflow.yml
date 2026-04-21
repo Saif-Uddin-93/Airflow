@@ -27,6 +27,16 @@
           - python3-psycopg2
         state: present
 
+    - name: Create the airflow_admin OS user
+      user:
+        name: "{{ airflow_user }}"
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Install community.postgresql collection dependencies
+      apt:
+        name: python3-psycopg2
+        state: present
     - name: Ensure PostgreSQL is started and enabled
       service:
         name: postgresql

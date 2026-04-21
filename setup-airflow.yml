@@ -2,16 +2,6 @@
 - name: Setup Apache Airflow on Debian
   hosts: all
   become: yes
-  vars:
-    airflow_user: airflow_admin
-    airflow_version: "2.10.0"
-    python_version: "3.12"
-    airflow_home: "/home/{{ airflow_user }}/airflow"
-    venv_path: "/home/{{ airflow_user }}/airflow_venv"
-    db_user: {{ airflow_db_user }}
-    db_password: {{ airflow_db_password }}
-    db_name: {{ airflow_db_name }}
-    mock_db_name: {{ mock_database_name }}
 
   tasks:
     - name: Update apt cache and install system dependencies

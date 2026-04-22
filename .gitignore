@@ -318,4 +318,6 @@ __marimo__/
 
 
 ansible/ansible_managed_node.sh
+ansible/group_vars/
+inventory.yml
 /Users/saif.uddin/projects/airflow/ansible/ansible_managed_node.sh

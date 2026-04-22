@@ -85,7 +85,8 @@
         source {{ venv_path }}/bin/activate
         uv pip install \
           "apache-airflow[postgres]=={{ airflow_version }}" \
-          psycopg2-binary
+          psycopg2-binary \
+          legacy-cgi  # This fixes the Python 3.13 'cgitb' error
       args:
         executable: /bin/bash
 

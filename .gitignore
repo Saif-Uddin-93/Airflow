@@ -315,3 +315,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+/Users/saif.uddin/projects/airflow/ansible/ansible_managed_node.sh

@@ -50,22 +50,27 @@
         name: "{{ mock_db_name }}"
         owner: "{{ db_user }}"
 
-    - name: Download and install uv binary directly to /usr/bin
-      shell: |
-        curl -LsSf https://astral.sh/uv/install.sh | BINDIR=/usr/bin sh
-      args:
-        creates: /usr/bin/uv
+    - name: Download uv archive
+      get_url:
+        url: https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-unknown-linux-musl.tar.gz
+        dest: /tmp/uv.tar.gz
 
-    - name: Ensure uv is globally executable
-      file:
-        path: /usr/bin/uv
+    - name: Extract uv binary
+      unarchive:
+        src: /tmp/uv.tar.gz
+        dest: /tmp
+        remote_src: yes
+
+    - name: Move uv to /usr/bin
+      copy:
+        src: /tmp/uv-x86_64-unknown-linux-musl/uv
+        dest: /usr/bin/uv
         mode: '0755'
-        owner: root
-        group: root
+        remote_src: yes
 
     - name: Create Virtual Environment with Python 3.13 using uv
       become_user: "{{ airflow_user }}"
-      shell: "uv venv {{ venv_path }} --python python3.13"
+      shell: "/usr/bin/uv venv {{ venv_path }} --python python3.13"
       args:
         creates: "{{ venv_path }}"
 

@@ -4,31 +4,16 @@
   become: yes
 
   tasks:
-    - name: Update apt cache and install system dependencies
+    - name: Install system dependencies
       apt:
         update_cache: yes
-        name:
-          - python3.13
-          - python3.13-venv
-          - python3-pip
-          - libpq-dev
-          - postgresql
-          - postgresql-contrib
-          - acl
-          - curl
-          - python3-psycopg2
-          - build-essential    # For compiling
-          - gcc                # For compiling
-          - g++                # For compiling
-          - libre2-dev         # Missing header fix
-          - libabsl-dev        # Missing header fix
+        name: [python3.13, python3.13-venv, python3-pip, libpq-dev, postgresql, 
+               postgresql-contrib, acl, curl, python3-psycopg2, build-essential, 
+               gcc, g++, libre2-dev, libabsl-dev]
         state: present
 
-    - name: Ensure PostgreSQL is started and enabled
-      service:
-        name: postgresql
-        state: started
-        enabled: yes
+    - name: Ensure PostgreSQL is running
+      service: { name: postgresql, state: started, enabled: yes }
 
     - name: Create the airflow_admin OS user
       user:

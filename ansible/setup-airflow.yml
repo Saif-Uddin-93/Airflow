@@ -1,5 +1,5 @@
 ---
-- name: Setup Apache Airflow on Debian
+- name: Setup Apache Airflow on Debian Trixie
   hosts: airflow_servers
   become: yes
 
@@ -8,30 +8,15 @@
       apt:
         update_cache: yes
         name:
-          - python3.14
-          - python3.14-venv
+          - python3.13
+          - python3.13-venv
           - python3-pip
           - libpq-dev
           - postgresql
           - postgresql-contrib
           - acl
           - curl
-        state: present
-
-    - name: Install uv globally
-      shell: curl -LsSf https://astral.sh/uv/install.sh | sh
-      args:
-        creates: /root/.cargo/bin/uv
-
-    - name: Create the airflow_admin OS user
-      user:
-        name: "{{ airflow_user }}"
-        shell: /bin/bash
-        create_home: yes
-
-    - name: Install community.postgresql collection dependencies
-      apt:
-        name: python3-psycopg2
+          - python3-psycopg2
         state: present
 
     - name: Ensure PostgreSQL is started and enabled
@@ -40,7 +25,13 @@
         state: started
         enabled: yes
 
-    - name: Create Airflow PostgreSQL user
+    - name: Create the airflow_admin OS user
+      user:
+        name: "{{ airflow_user }}"
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Create Airflow PostgreSQL user and databases
       become_user: postgres
       postgresql_user:
         name: "{{ db_user }}"
@@ -59,23 +50,19 @@
         name: "{{ mock_db_name }}"
         owner: "{{ db_user }}"
 
-    - name: Create Airflow home directory
-      file:
-        path: "{{ airflow_home }}"
-        state: directory
-        owner: "{{ airflow_user }}"
-        group: "{{ airflow_user }}"
-        mode: '0755'
-
-    - name: Create Python 3.14 Virtual Environment with uv
+    - name: Install uv for the airflow_admin user
       become_user: "{{ airflow_user }}"
-      shell: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        /home/{{ airflow_user }}/.cargo/bin/uv venv {{ venv_path }} --python python3.14
+      shell: curl -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        creates: "/home/{{ airflow_user }}/.cargo/bin/uv"
+
+    - name: Create Virtual Environment with Python 3.13 using uv
+      become_user: "{{ airflow_user }}"
+      shell: "/home/{{ airflow_user }}/.cargo/bin/uv venv {{ venv_path }} --python python3.13"
       args:
         creates: "{{ venv_path }}"
 
-    - name: Install Airflow and Postgres Driver using uv
+    - name: Install Airflow using uv
       become_user: "{{ airflow_user }}"
       shell: |
         source {{ venv_path }}/bin/activate

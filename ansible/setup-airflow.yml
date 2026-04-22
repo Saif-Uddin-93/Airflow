@@ -17,6 +17,11 @@
           - acl
           - curl
           - python3-psycopg2
+          - build-essential    # For compiling
+          - gcc                # For compiling
+          - g++                # For compiling
+          - libre2-dev         # Missing header fix
+          - libabsl-dev        # Missing header fix
         state: present
 
     - name: Ensure PostgreSQL is started and enabled

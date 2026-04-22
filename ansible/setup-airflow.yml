@@ -85,8 +85,7 @@
         source {{ venv_path }}/bin/activate
         uv pip install \
           "apache-airflow[postgres]=={{ airflow_version }}" \
-          psycopg2-binary \
-          --constraint https://raw.githubusercontent.com/apache/airflow/constraints-{{ airflow_version }}/constraints-{{ python_version }}.txt
+          psycopg2-binary
       args:
         executable: /bin/bash
 

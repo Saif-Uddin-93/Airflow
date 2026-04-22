@@ -1,4 +1,3 @@
----
 - name: Setup Apache Airflow on Debian Trixie
   hosts: airflow_servers
   become: yes
@@ -71,7 +70,7 @@
         uv pip install \
           "apache-airflow[postgres]=={{ airflow_version }}" \
           psycopg2-binary \
-          legacy-cgi  # This fixes the Python 3.13 'cgitb' error
+          legacy-cgi
       args:
         executable: /bin/bash
 

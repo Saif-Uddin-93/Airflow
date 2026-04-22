@@ -50,15 +50,14 @@
         name: "{{ mock_db_name }}"
         owner: "{{ db_user }}"
 
-    - name: Install uv for the airflow_admin user
-      become_user: "{{ airflow_user }}"
-      shell: curl -LsSf https://astral.sh/uv/install.sh | sh
-      args:
-        creates: "/home/{{ airflow_user }}/.cargo/bin/uv"
+    - name: Install uv using pip (Predictable Path)
+      pip:
+        name: uv
+        state: present
 
     - name: Create Virtual Environment with Python 3.13 using uv
       become_user: "{{ airflow_user }}"
-      shell: "/home/{{ airflow_user }}/.cargo/bin/uv venv {{ venv_path }} --python python3.13"
+      shell: "uv venv {{ venv_path }} --python python3.13"
       args:
         creates: "{{ venv_path }}"
 
@@ -66,7 +65,7 @@
       become_user: "{{ airflow_user }}"
       shell: |
         source {{ venv_path }}/bin/activate
-        /home/{{ airflow_user }}/.cargo/bin/uv pip install \
+        uv pip install \
           "apache-airflow[postgres]=={{ airflow_version }}" \
           psycopg2-binary \
           --constraint https://raw.githubusercontent.com/apache/airflow/constraints-{{ airflow_version }}/constraints-{{ python_version }}.txt

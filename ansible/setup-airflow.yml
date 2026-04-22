@@ -146,3 +146,52 @@
         EOF
       environment:
         PGPASSWORD: "{{ db_password }}"
+
+    - name: Create systemd service for Airflow Webserver
+      copy:
+        dest: /etc/systemd/system/airflow-webserver.service
+        content: |
+          [Unit]
+          Description=Airflow webserver daemon
+          After=network.target postgresql.service
+          [Service]
+          User={{ airflow_user }}
+          Group={{ airflow_user }}
+          Type=simple
+          Environment="AIRFLOW_HOME={{ airflow_home }}"
+          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          ExecStart={{ venv_path }}/bin/airflow webserver
+          Restart=on-failure
+          RestartSec=5s
+          PrivateTmp=true
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Create systemd service for Airflow Scheduler
+      copy:
+        dest: /etc/systemd/system/airflow-scheduler.service
+        content: |
+          [Unit]
+          Description=Airflow scheduler daemon
+          After=network.target postgresql.service
+          [Service]
+          User={{ airflow_user }}
+          Group={{ airflow_user }}
+          Type=simple
+          Environment="AIRFLOW_HOME={{ airflow_home }}"
+          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          ExecStart={{ venv_path }}/bin/airflow scheduler
+          Restart=on-failure
+          RestartSec=5s
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and enable Airflow services
+      systemd:
+        daemon_reload: yes
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - airflow-webserver
+        - airflow-scheduler

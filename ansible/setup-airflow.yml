@@ -114,6 +114,7 @@
       shell: |
         source {{ venv_path }}/bin/activate
         export AIRFLOW_HOME={{ airflow_home }}
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
         airflow users create \
           --username {{ airflow_create_user }} \
           --firstname {{ airflow_create_first_name }} \

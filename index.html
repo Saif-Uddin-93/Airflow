@@ -21,10 +21,25 @@
         <strong>Note:</strong> On Linux, the standard <code>psycopg2-binary</code> driver is stable and does not require the workarounds used on macOS.
     </div>
 
+    <h2>On Ansible environment</h2>
+    <pre><code>ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+        ssh-copy-id ansible_admin@&lt;container_ip_address&gt;</code></pre>
+    </code></pre>
+    
+    <p>Edit your hosts file (usually /etc/ansible/hosts or a local inventory.yml):</p>
+    <pre><code>airflow_servers:
+        hosts:
+        airflow_container:
+        airflow_host: &lt;container_ip_address&gt;
+        airflow_user: ansible_admin
+        airflow_python_interpreter: /usr/bin/python3</code></pre>
+    </code></pre>
+    
+    <h2>On Airflow environment</h2>
     <h2>1. System Dependencies</h2>
     <p>Install Python environment tools and PostgreSQL C-headers.</p>
     <pre><code>sudo apt update && sudo apt install -y python3-venv python3-pip libpq-dev postgresql postgresql-contrib</code></pre>
-
+    
     <h2>2. Database Setup</h2>
     <p>Create the metadata database and a mock source database for testing.</p>
     <pre><code># Enter Postgres as the superuser

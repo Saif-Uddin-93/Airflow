@@ -1,3 +1,4 @@
+############################################################################
 # AIRFLOW CONTAINER (MANAGED NODE)
 apt update && apt install -y openssh-server python3 sudo
 systemctl enable --now ssh
@@ -13,6 +14,8 @@ mkdir -p /home/airflow_admin/.ssh
 chown airflow_admin:airflow_admin /home/airflow_admin/.ssh
 chmod 700 /home/airflow_admin/.ssh
 
+
+############################################################################
 # ANSIBLE CONTAINER (CONTROLLER NODE)
 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
 ssh-copy-id airflow_admin@<ip_address_of_managed_node>

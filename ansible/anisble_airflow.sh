@@ -3,11 +3,11 @@ apt update && apt install -y openssh-server python3 sudo
 systemctl enable --now ssh
 
 useradd -m -s /bin/bash airflow_admin -G sudo
-echo "airflow_admin:<PASSWORD>" | chpasswd
+echo "airflow_admin:airflow" | chpasswd
 
 mkdir -p /etc/sudoers.d/
-echo "airflow_admin ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ansible
-chmod 0440 /etc/sudoers.d/ansible
+echo "airflow_admin ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/airflow_admin
+chmod 0440 /etc/sudoers.d/airflow_admin
 
 mkdir -p /home/airflow_admin/.ssh
 chown airflow_admin:airflow_admin /home/airflow_admin/.ssh

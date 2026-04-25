@@ -1,4 +1,7 @@
 # AIRFLOW CONTAINER (MANAGED NODE)
+apt update && apt install -y openssh-server python3 sudo
+systemctl enable --now ssh
+
 useradd -m -s /bin/bash ansible_admin -G sudo
 echo "ansible_admin:<PASSWORD>" | chpasswd
 

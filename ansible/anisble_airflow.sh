@@ -16,7 +16,8 @@ chmod 700 /home/airflow_admin/.ssh
 # ANSIBLE CONTAINER (CONTROLLER NODE)
 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
 ssh-copy-id airflow_admin@<ip_address_of_managed_node>
-ssh airflow_admin@<ip_address_of_managed_node>
+# test ssh connection 
+# ssh airflow_admin@<ip_address_of_managed_node>
 
 # Run this on the Controller if the IP was used previously
 ssh-keygen -f "/root/.ssh/known_hosts" -R "<ip_address_of_managed_node>"

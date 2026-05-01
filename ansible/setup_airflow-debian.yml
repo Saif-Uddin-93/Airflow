@@ -7,7 +7,7 @@
       apt:
         update_cache: yes
         name: [python3.13, python3.13-venv, python3-pip, libpq-dev, postgresql, 
-               postgresql-contrib, acl, curl, python3-psycopg2, build-essential, 
+               postgresql-contrib, locales, acl, curl, python3-psycopg2, build-essential, 
                gcc, g++, libre2-dev, libabsl-dev]
         state: present
 

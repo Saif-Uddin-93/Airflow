@@ -1,6 +1,12 @@
 ############################################################################
 # AIRFLOW CONTAINER (MANAGED NODE - ALPINE)
 
+# Bring up the interface and manually configure the network
+ip link set dev eth0 up
+ip addr add 192.168.1.29/24 dev eth0
+ip route add default via 192.168.1.1
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+
 # Install required packages (shadow is added to ensure chpasswd works)
 apk update && apk add openssh python3 sudo bash shadow
 

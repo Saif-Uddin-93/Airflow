@@ -1,26 +1,39 @@
-# Ansible Connection Settings (Crucial for Alpine)
-ansible_python_interpreter: /usr/bin/python3
+############################################################################
+# AIRFLOW CONTAINER (MANAGED NODE - ALPINE)
 
-# Airflow System Settings
-airflow_user: airflow_admin
-airflow_version: "2.10.0"
-python_version: "3.12" # Updated to reflect standard Alpine package repositories
-airflow_home: "/home/{{ airflow_user }}/airflow"
-venv_path: "/home/{{ airflow_user }}/airflow_venv"
+# Install required packages (shadow is added to ensure chpasswd works)
+apk update && apk add openssh python3 sudo bash shadow
 
-# Database Settings
-db_user: airflow_admin
-db_password: airflow_password_123
-db_name: airflow_db
-mock_db_name: mock_database
+# Generate SSH host keys (Required in Alpine before starting the daemon)
+ssh-keygen -A
 
-# Airflow UI Admin User Settings
-airflow_create_user: admin
-airflow_create_first_name: Saif
-airflow_create_last_name: Uddin
-airflow_create_role: Admin
-airflow_create_email: admin@example.com
-airflow_create_password: admin_password_123
+# Start the SSH daemon (systemctl does not exist in standard Alpine containers)
+/usr/sbin/sshd
 
-# Connection String (Calculated once here to avoid repeating in the playbook)
-airflow_db_conn: "postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+# Create the user (-D creates the user without assigning a password prompt)
+adduser -D -s /bin/bash airflow_admin
+echo "airflow_admin:airflow" | chpasswd
+
+# Configure passwordless sudo for the user
+mkdir -p /etc/sudoers.d/
+echo "airflow_admin ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/airflow_admin
+chmod 0440 /etc/sudoers.d/airflow_admin
+
+# Setup SSH directory
+mkdir -p /home/airflow_admin/.ssh
+chown airflow_admin:airflow_admin /home/airflow_admin/.ssh
+chmod 700 /home/airflow_admin/.ssh
+
+
+############################################################################
+# ANSIBLE CONTAINER (CONTROLLER NODE)
+
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+ssh-copy-id airflow_admin@<ip_address_of_managed_node>
+
+# test ssh connection 
+# ssh airflow_admin@<ip_address_of_managed_node>
+
+# Run this on the Controller if the IP was used previously and the host key changed
+ssh-keygen -f "/root/.ssh/known_hosts" -R "<ip_address_of_managed_node>"
+ssh-copy-id airflow_admin@<ip_address_of_managed_node>

@@ -23,6 +23,8 @@
           - linux-headers
           - git
           - tar
+          - re2-dev
+          - abseil-cpp-dev
         state: present
 
     - name: Ensure PostgreSQL data directory is initialized

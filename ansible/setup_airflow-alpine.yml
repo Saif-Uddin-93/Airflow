@@ -56,14 +56,14 @@
         password: "{{ db_password }}"
         role_attr_flags: NOSUPERUSER,CREATEDB
         # login_unix_socket: /run/postgresql/
-        login_unix_socket: /tmp/  # <-- UPDATED: Default socket path for manual initdb
+        login_unix_socket: /run/postgresql/  # <-- UPDATED: Default socket path for manual initdb
 
     - name: Create Airflow metadata database
       become_user: postgres
       community.postgresql.postgresql_db:
         name: "{{ db_name }}"
         owner: "{{ db_user }}"
-        login_unix_socket: /tmp/  # <-- UPDATED: Default socket path for manual initdb
+        login_unix_socket: /run/postgresql/  # <-- UPDATED: Default socket path for manual initdb
 
     - name: Create Mock source database
       become_user: postgres

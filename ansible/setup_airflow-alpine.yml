@@ -21,6 +21,7 @@
           - musl-locales
           - linux-headers
           - git
+          - tar
         state: present
 
     - name: Ensure PostgreSQL data directory is initialized

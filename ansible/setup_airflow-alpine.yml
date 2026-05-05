@@ -10,6 +10,7 @@
           - sudo
           - python3
           - py3-pip
+          - py3-psycopg2
           - postgresql16
           - postgresql16-client
           - postgresql-dev
@@ -28,12 +29,19 @@
         creates: /var/lib/postgresql/data/PG_VERSION
       become_user: postgres
 
-    - name: Ensure PostgreSQL is running (OpenRC style)
-      service:
-        name: postgresql
-        state: started
-        enabled: yes
-      ignore_errors: yes
+    # - name: Ensure PostgreSQL is running (OpenRC style)
+    #   service:
+    #     name: postgresql
+    #     state: started
+    #     enabled: yes
+    #   ignore_errors: yes
+    - name: Ensure PostgreSQL is running
+      become_user: postgres
+      shell: |
+        /usr/bin/pg_ctl status -D /var/lib/postgresql/data || \
+        /usr/bin/pg_ctl start -D /var/lib/postgresql/data -l /var/lib/postgresql/data/pg_log.txt
+      register: pg_start
+      changed_when: "'server starting' in pg_start.stdout"
 
     - name: Create the airflow_admin OS user
       user:
@@ -47,14 +55,15 @@
         name: "{{ db_user }}"
         password: "{{ db_password }}"
         role_attr_flags: NOSUPERUSER,CREATEDB
-        login_unix_socket: /run/postgresql/
+        # login_unix_socket: /run/postgresql/
+        login_unix_socket: /tmp/  # <-- UPDATED: Default socket path for manual initdb
 
     - name: Create Airflow metadata database
       become_user: postgres
       community.postgresql.postgresql_db:
         name: "{{ db_name }}"
         owner: "{{ db_user }}"
-        login_unix_socket: /run/postgresql/
+        login_unix_socket: /tmp/  # <-- UPDATED: Default socket path for manual initdb
 
     - name: Create Mock source database
       become_user: postgres

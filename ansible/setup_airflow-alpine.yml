@@ -1,26 +1,169 @@
-# Ansible Connection Settings (Crucial for Alpine)
-ansible_python_interpreter: /usr/bin/python3
+- name: Setup Apache Airflow on Alpine
+  hosts: airflow_servers
+  become: yes
 
-# Airflow System Settings
-airflow_user: airflow_admin
-airflow_version: "2.10.0"
-python_version: "3.12" # Updated to reflect standard Alpine package repositories
-airflow_home: "/home/{{ airflow_user }}/airflow"
-venv_path: "/home/{{ airflow_user }}/airflow_venv"
+  tasks:
+    - name: Install system dependencies
+      community.general.apk:
+        update_cache: yes
+        name: 
+          - sudo
+          - python3
+          - py3-pip
+          - postgresql16
+          - postgresql16-client
+          - postgresql-dev
+          - build-base
+          - bash
+          - curl
+          - tzdata
+          - musl-locales
+          - linux-headers
+          - git
+        state: present
 
-# Database Settings
-db_user: airflow_admin
-db_password: airflow_password_123
-db_name: airflow_db
-mock_db_name: mock_database
+    - name: Ensure PostgreSQL data directory is initialized
+      command:
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data initdb
+        creates: /var/lib/postgresql/data/PG_VERSION
+      become_user: postgres
 
-# Airflow UI Admin User Settings
-airflow_create_user: admin
-airflow_create_first_name: Saif
-airflow_create_last_name: Uddin
-airflow_create_role: Admin
-airflow_create_email: admin@example.com
-airflow_create_password: admin_password_123
+    - name: Ensure PostgreSQL is running (OpenRC style)
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+      ignore_errors: yes
 
-# Connection String (Calculated once here to avoid repeating in the playbook)
-airflow_db_conn: "postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+    - name: Create the airflow_admin OS user
+      user:
+        name: "{{ airflow_user }}"
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Create Airflow PostgreSQL user and databases
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        role_attr_flags: NOSUPERUSER,CREATEDB
+        login_unix_socket: /run/postgresql/
+
+    - name: Create Airflow metadata database
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+        login_unix_socket: /run/postgresql/
+
+    - name: Create Mock source database
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: "{{ mock_db_name }}"
+        owner: "{{ db_user }}"
+        login_unix_socket: /run/postgresql/
+
+    - name: Download uv archive (musl version)
+      get_url:
+        url: https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-unknown-linux-musl.tar.gz
+        dest: /tmp/uv.tar.gz
+
+    - name: Extract and install uv
+      unarchive:
+        src: /tmp/uv.tar.gz
+        dest: /usr/bin
+        extra_opts: [--strip-components=1]
+        remote_src: yes
+        include: "*/uv"
+
+    - name: Create Virtual Environment using uv
+      become_user: "{{ airflow_user }}"
+      shell: "uv venv {{ venv_path }} --python /usr/bin/python3"
+      args:
+        creates: "{{ venv_path }}"
+
+    - name: Install Airflow using uv
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        uv pip install \
+          "apache-airflow[postgres]=={{ airflow_version }}" \
+          psycopg2 \
+          legacy-cgi
+      args:
+        executable: /bin/bash
+
+    - name: Configure environment variables in .bashrc
+      become_user: "{{ airflow_user }}"
+      blockinfile:
+        path: "/home/{{ airflow_user }}/.bashrc"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK AIRFLOW"
+        block: |
+          export AIRFLOW_HOME={{ airflow_home }}
+          export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+
+    - name: Initialize Airflow Database
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        export AIRFLOW_HOME={{ airflow_home }}
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+        airflow db migrate
+      args:
+        executable: /bin/bash
+
+    - name: Create Airflow Admin User
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        export AIRFLOW_HOME={{ airflow_home }}
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+        airflow users create \
+          --username {{ airflow_create_user }} \
+          --firstname {{ airflow_create_first_name }} \
+          --lastname {{ airflow_create_last_name }} \
+          --role {{ airflow_create_role }} \
+          --email {{ airflow_create_email }}\
+          --password {{ airflow_create_password }}
+      args:
+        executable: /bin/bash
+      register: user_create_output
+      failed_when: "'already exists' not in user_create_output.stdout and user_create_output.rc != 0"
+      changed_when: "'created' in user_create_output.stdout"
+
+    - name: Populate Mock Source Data
+      become_user: "{{ airflow_user }}"
+      shell: |
+        psql -d {{ mock_db_name }} -h localhost -U {{ db_user }} <<SQL
+        CREATE TABLE IF NOT EXISTS source_orders (
+            order_id INT PRIMARY KEY,
+            customer_name VARCHAR(100),
+            order_total NUMERIC,
+            order_date DATE
+        );
+        INSERT INTO source_orders (order_id, customer_name, order_total, order_date) VALUES
+        (1, 'Alice Smith', 150.00, '2026-04-10'),
+        (2, 'Bob Jones', 85.50, '2026-04-11'),
+        (3, 'Charlie Brown', 210.25, '2026-04-12')
+        ON CONFLICT DO NOTHING;
+        SQL
+      environment:
+        PGPASSWORD: "{{ db_password }}"
+
+    - name: Start Airflow Webserver in background
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        export AIRFLOW_HOME={{ airflow_home }}
+        nohup airflow webserver > /tmp/airflow-webserver.log 2>&1 &
+      args:
+        executable: /bin/bash
+
+    - name: Start Airflow Scheduler in background
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        export AIRFLOW_HOME={{ airflow_home }}
+        nohup airflow scheduler > /tmp/airflow-scheduler.log 2>&1 &
+      args:
+        executable: /bin/bash

@@ -1,4 +1,3 @@
----
 - name: Setup Apache Airflow on Alpine
   hosts: airflow_servers
   become: yes

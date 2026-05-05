@@ -25,7 +25,7 @@
           - tar
           - re2-dev
           - abseil-cpp-dev
-          - pybind11-dev
+          - py3-pybind11-dev
           - libffi-dev
           - openssl-dev
           - zlib-dev

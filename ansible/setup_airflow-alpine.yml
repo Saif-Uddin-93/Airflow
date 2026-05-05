@@ -179,13 +179,13 @@
         PGPASSWORD: "{{ db_password }}"
 
     - name: Start Airflow Webserver in background
-          become_user: "{{ airflow_user }}"
-          shell: |
-            source /home/{{ airflow_user }}/.profile
-            source {{ venv_path }}/bin/activate
-            nohup airflow webserver --host 0.0.0.0 > /tmp/airflow-webserver.log 2>&1 &
-          args:
-            executable: /bin/bash
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source /home/{{ airflow_user }}/.profile
+        source {{ venv_path }}/bin/activate
+        nohup airflow webserver --host 0.0.0.0 > /tmp/airflow-webserver.log 2>&1 &
+      args:
+        executable: /bin/bash
 
     - name: Start Airflow Scheduler in background
       become_user: "{{ airflow_user }}"

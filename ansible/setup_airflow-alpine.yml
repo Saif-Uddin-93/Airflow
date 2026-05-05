@@ -1,3 +1,4 @@
+---
 - name: Setup Apache Airflow on Alpine
   hosts: airflow_servers
   become: yes
@@ -43,6 +44,15 @@
     #     state: started
     #     enabled: yes
     #   ignore_errors: yes
+    
+    - name: Ensure PostgreSQL run directory exists
+      file:
+        path: /run/postgresql
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: '0775'
+
     - name: Ensure PostgreSQL is running
       become_user: postgres
       shell: |
@@ -63,15 +73,14 @@
         name: "{{ db_user }}"
         password: "{{ db_password }}"
         role_attr_flags: NOSUPERUSER,CREATEDB
-        # login_unix_socket: /run/postgresql/
-        login_unix_socket: /run/postgresql/  # <-- UPDATED: Default socket path for manual initdb
+        login_unix_socket: /run/postgresql/
 
     - name: Create Airflow metadata database
       become_user: postgres
       community.postgresql.postgresql_db:
         name: "{{ db_name }}"
         owner: "{{ db_user }}"
-        login_unix_socket: /run/postgresql/  # <-- UPDATED: Default socket path for manual initdb
+        login_unix_socket: /run/postgresql/
 
     - name: Create Mock source database
       become_user: postgres
@@ -112,10 +121,11 @@
       args:
         executable: /bin/bash
 
-    - name: Configure environment variables in .bashrc
+    - name: Configure environment variables in .profile
       become_user: "{{ airflow_user }}"
       blockinfile:
-        path: "/home/{{ airflow_user }}/.bashrc"
+        path: "/home/{{ airflow_user }}/.profile"
+        create: yes
         marker: "# {mark} ANSIBLE MANAGED BLOCK AIRFLOW"
         block: |
           export AIRFLOW_HOME={{ airflow_home }}

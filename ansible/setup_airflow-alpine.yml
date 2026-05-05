@@ -25,6 +25,10 @@
           - tar
           - re2-dev
           - abseil-cpp-dev
+          - pybind11-dev
+          - libffi-dev
+          - openssl-dev
+          - zlib-dev
         state: present
 
     - name: Ensure PostgreSQL data directory is initialized

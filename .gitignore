@@ -42,8 +42,8 @@ instance/
 # Apache Airflow-specific
 # -----------------------
 # Airflow home directory (if you keep it inside the project)
-airflow.db
-airflow.cfg
+# airflow.db
+# airflow.cfg
 airflow-*.err
 airflow-*.out
 airflow-*.log

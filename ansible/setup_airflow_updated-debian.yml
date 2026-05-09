@@ -81,14 +81,14 @@
         marker: "# {mark} ANSIBLE MANAGED BLOCK AIRFLOW"
         block: |
           export AIRFLOW_HOME={{ airflow_home }}
-          export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
 
     - name: Initialize Airflow Database
       become_user: "{{ airflow_user }}"
       shell: |
         source {{ venv_path }}/bin/activate
         export AIRFLOW_HOME={{ airflow_home }}
-        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
         airflow db migrate
       args:
         executable: /bin/bash
@@ -112,7 +112,7 @@
       shell: |
         source {{ venv_path }}/bin/activate
         export AIRFLOW_HOME={{ airflow_home }}
-        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
         airflow users create \
           --username {{ airflow_create_user }} \
           --firstname {{ airflow_create_first_name }} \
@@ -159,7 +159,7 @@
           Group={{ airflow_user }}
           Type=simple
           Environment="AIRFLOW_HOME={{ airflow_home }}"
-          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN={{ airflow_db_conn }}"
           ExecStart={{ venv_path }}/bin/airflow webserver
           Restart=on-failure
           RestartSec=5s
@@ -181,7 +181,7 @@
           Group={{ airflow_user }}
           Type=simple
           Environment="AIRFLOW_HOME={{ airflow_home }}"
-          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN={{ airflow_db_conn }}"
           ExecStart={{ venv_path }}/bin/airflow scheduler
           Restart=on-failure
           RestartSec=5s

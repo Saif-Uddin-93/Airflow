@@ -6,7 +6,6 @@
     - name: Install system dependencies
       apt:
         update_cache: yes
-        # Removed bloat: compilers, headers, and native pip
         name: [python3.13, python3.13-venv, postgresql, postgresql-contrib, 
                locales, acl, curl, python3-psycopg2]
         state: present
@@ -89,7 +88,6 @@
         airflow db migrate
       args:
         executable: /bin/bash
-      # Replaced manual exports with the environment keyword
       environment:
         AIRFLOW_HOME: "{{ airflow_home }}"
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
@@ -124,7 +122,6 @@
       register: user_create_output
       failed_when: "'already exists' not in user_create_output.stdout and user_create_output.rc != 0"
       changed_when: "'created' in user_create_output.stdout"
-      # Replaced manual exports with the environment keyword
       environment:
         AIRFLOW_HOME: "{{ airflow_home }}"
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
@@ -145,7 +142,6 @@
         (3, 'Charlie Brown', 210.25, '2026-04-12')
         ON CONFLICT DO NOTHING;
         EOF
-      # This already correctly used the environment keyword
       environment:
         PGPASSWORD: "{{ db_password }}"
 

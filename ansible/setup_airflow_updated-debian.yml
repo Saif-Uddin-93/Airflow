@@ -99,6 +99,7 @@
         path: "{{ airflow_home }}/airflow.cfg"
         regexp: 'executor = SequentialExecutor'
         replace: 'executor = LocalExecutor'
+      # equivalent to sed -i 's/executor = SequentialExecutor/executor = LocalExecutor/g' {{ airflow_home }}/airflow.cfg
 
     - name: Update airflow.cfg - Disable example DAGs
       become_user: "{{ airflow_user }}"
@@ -106,6 +107,7 @@
         path: "{{ airflow_home }}/airflow.cfg"
         regexp: 'load_examples = True'
         replace: 'load_examples = False'
+      # equivalent to sed -i 's/load_examples = True/load_examples = False/g' {{ airflow_home }}/airflow.cfg
 
     - name: Create Airflow Admin User
       become_user: "{{ airflow_user }}"

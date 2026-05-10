@@ -1,3 +1,4 @@
+# This playbook sets up Apache Airflow on an Alpine Linux server. Currently not ready for production use.
 - name: Setup Apache Airflow on Alpine
   hosts: airflow_servers
   become: yes

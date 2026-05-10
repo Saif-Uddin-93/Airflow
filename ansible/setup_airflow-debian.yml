@@ -6,9 +6,9 @@
     - name: Install system dependencies
       apt:
         update_cache: yes
-        name: [python3.13, python3.13-venv, python3-pip, libpq-dev, postgresql, 
-               postgresql-contrib, locales, acl, curl, python3-psycopg2, build-essential, 
-               gcc, g++, libre2-dev, libabsl-dev]
+        # Removed bloat: compilers, headers, and native pip
+        name: [python3.13, python3.13-venv, postgresql, postgresql-contrib, 
+               locales, acl, curl, python3-psycopg2]
         state: present
 
     - name: Ensure PostgreSQL is running
@@ -69,7 +69,6 @@
         source {{ venv_path }}/bin/activate
         uv pip install \
           "apache-airflow[postgres]=={{ airflow_version }}" \
-          psycopg2-binary \
           legacy-cgi
       args:
         executable: /bin/bash
@@ -81,24 +80,38 @@
         marker: "# {mark} ANSIBLE MANAGED BLOCK AIRFLOW"
         block: |
           export AIRFLOW_HOME={{ airflow_home }}
-          export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
 
     - name: Initialize Airflow Database
       become_user: "{{ airflow_user }}"
       shell: |
         source {{ venv_path }}/bin/activate
-        export AIRFLOW_HOME={{ airflow_home }}
-        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
         airflow db migrate
       args:
         executable: /bin/bash
+      # Replaced manual exports with the environment keyword
+      environment:
+        AIRFLOW_HOME: "{{ airflow_home }}"
+        AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
+
+    - name: Update airflow.cfg - Change to LocalExecutor
+      become_user: "{{ airflow_user }}"
+      replace:
+        path: "{{ airflow_home }}/airflow.cfg"
+        regexp: 'executor = SequentialExecutor'
+        replace: 'executor = LocalExecutor'
+
+    - name: Update airflow.cfg - Disable example DAGs
+      become_user: "{{ airflow_user }}"
+      replace:
+        path: "{{ airflow_home }}/airflow.cfg"
+        regexp: 'load_examples = True'
+        replace: 'load_examples = False'
 
     - name: Create Airflow Admin User
       become_user: "{{ airflow_user }}"
       shell: |
         source {{ venv_path }}/bin/activate
-        export AIRFLOW_HOME={{ airflow_home }}
-        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
         airflow users create \
           --username {{ airflow_create_user }} \
           --firstname {{ airflow_create_first_name }} \
@@ -111,6 +124,10 @@
       register: user_create_output
       failed_when: "'already exists' not in user_create_output.stdout and user_create_output.rc != 0"
       changed_when: "'created' in user_create_output.stdout"
+      # Replaced manual exports with the environment keyword
+      environment:
+        AIRFLOW_HOME: "{{ airflow_home }}"
+        AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
 
     - name: Populate Mock Source Data
       become_user: "{{ airflow_user }}"
@@ -128,6 +145,7 @@
         (3, 'Charlie Brown', 210.25, '2026-04-12')
         ON CONFLICT DO NOTHING;
         EOF
+      # This already correctly used the environment keyword
       environment:
         PGPASSWORD: "{{ db_password }}"
 
@@ -137,17 +155,20 @@
         content: |
           [Unit]
           Description=Airflow webserver daemon
-          After=network.target postgresql.service
+          After=network.target postgresql@17-main.service
+          Wants=postgresql@17-main.service
+
           [Service]
           User={{ airflow_user }}
           Group={{ airflow_user }}
           Type=simple
           Environment="AIRFLOW_HOME={{ airflow_home }}"
-          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN={{ airflow_db_conn }}"
           ExecStart={{ venv_path }}/bin/airflow webserver
           Restart=on-failure
           RestartSec=5s
           PrivateTmp=true
+
           [Install]
           WantedBy=multi-user.target
 
@@ -158,15 +179,17 @@
           [Unit]
           Description=Airflow scheduler daemon
           After=network.target postgresql.service
+          
           [Service]
           User={{ airflow_user }}
           Group={{ airflow_user }}
           Type=simple
           Environment="AIRFLOW_HOME={{ airflow_home }}"
-          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://{{ db_user }}:{{ db_password }}@localhost:5432/{{ db_name }}"
+          Environment="AIRFLOW__DATABASE__SQL_ALCHEMY_CONN={{ airflow_db_conn }}"
           ExecStart={{ venv_path }}/bin/airflow scheduler
           Restart=on-failure
           RestartSec=5s
+          
           [Install]
           WantedBy=multi-user.target
 

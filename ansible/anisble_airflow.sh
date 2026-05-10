@@ -1,6 +1,6 @@
 ############################################################################
 # AIRFLOW CONTAINER (MANAGED NODE)
-apt update && apt install -y openssh-server python3 sudo
+apt update && apt install -y openssh-server sudo
 systemctl enable --now ssh
 
 useradd -m -s /bin/bash airflow_admin -G sudo

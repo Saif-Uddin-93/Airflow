@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from airflow.decorators import task, dag
-from airflow.operators.bash import BashOperator, PythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 
 
 default_args = {

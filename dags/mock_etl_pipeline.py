@@ -59,7 +59,7 @@ def etl_pipeline():
             processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
-        pg_hook.run(create_table_query)
+        pg_hook.run(create_table_query, autocommit=True)
 
         # 2. Insert data (Upsert logic)
         for row in final_data:

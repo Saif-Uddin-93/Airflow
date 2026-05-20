@@ -1,6 +1,5 @@
-name: Deploy Airflow DAGs (Rsync)
+name: Deploy Airflow DAGs (Git Pull Only)
 
-# Trigger the workflow when code is pushed/merged to the main branch
 on:
   push:
     branches:
@@ -10,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    name: Git Pull and Rsync
+    name: Trigger Local Git Pull
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +26,10 @@ jobs:
             echo "Pulling latest changes from main branch..."
             git pull origin main
             
-            echo "Syncing dags folder to Airflow using rsync..."
-            rsync -av --delete ~/airflow/github/Airflow/dags/ ~/airflow/dags/
-            
-            echo "Deployment complete!"
+            echo "Code updated! Local server will handle the DAG sync."
+
+        
+# echo "Syncing dags folder to Airflow using rsync..."
+# rsync -av --delete ~/airflow/github/Airflow/dags/ ~/airflow/dags/
+
+# echo "Deployment complete!"

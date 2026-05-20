@@ -1,12 +1,17 @@
+import os
 from airflow.decorators import dag, task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load variables from .env into the system environment
+load_dotenv()
 
 # Default arguments for the DAG
 default_args = {
     'owner': 'saif',
     'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=2),
 }
 
 @dag(

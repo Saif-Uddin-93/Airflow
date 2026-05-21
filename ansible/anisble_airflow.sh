@@ -14,6 +14,7 @@ mkdir -p /home/airflow_admin/.ssh
 chown airflow_admin:airflow_admin /home/airflow_admin/.ssh
 chmod 700 /home/airflow_admin/.ssh
 
+# sudo apt install -y build-essential libpq-dev python3-dev
 
 ############################################################################
 # ANSIBLE CONTAINER (CONTROLLER NODE)

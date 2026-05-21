@@ -9,7 +9,7 @@ load_dotenv()
 
 # Default arguments for the DAG
 default_args = {
-    'owner': 'saif',
+    'owner': 'airflow_admin',
     'retries': 1,
     'retry_delay': timedelta(minutes=2),
 }

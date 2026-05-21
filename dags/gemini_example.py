@@ -49,7 +49,6 @@ def transform_data(ti):
     input_path = ti.xcom_pull(task_ids='extract_data')
     df = pd.read_csv(input_path)
     
-    # Clean Price: The website uses '£' (and sometimes 'Â£' due to encoding). 
     # This Regex removes everything except numbers and decimals, then converts to float.
     df['Price'] = df['Price'].str.replace(r'[^\d.]', '', regex=True).astype(float)
     

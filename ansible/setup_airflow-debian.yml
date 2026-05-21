@@ -6,9 +6,22 @@
     - name: Install system dependencies
       apt:
         update_cache: yes
-        name: [python3.13, python3.13-venv, postgresql, postgresql-contrib, 
-               locales, acl, curl, python3-psycopg2]
+        name: 
+          - python3.13
+          - python3.13-venv
+          - postgresql
+          - postgresql-contrib
+          - locales
+          - acl
+          - curl
+          - python3-psycopg2
+          - build-essential
+          - libpq-dev
+          - python3-dev
         state: present
+
+    - name: Set system locale to C.UTF-8
+      command: update-locale LANG=C.UTF-8 LC_ALL=C.UTF-8
 
     - name: Ensure PostgreSQL is running
       service: { name: postgresql, state: started, enabled: yes }
@@ -22,21 +35,32 @@
     - name: Create Airflow PostgreSQL user and databases
       become_user: postgres
       postgresql_user:
-        name: "{{ db_user }}"
-        password: "{{ db_password }}"
+        name: "{{ airflow_db_user }}"
+        password: "{{ airflow_db_password }}"
         role_attr_flags: NOSUPERUSER,CREATEDB
 
     - name: Create Airflow metadata database
       become_user: postgres
       postgresql_db:
-        name: "{{ db_name }}"
-        owner: "{{ db_user }}"
+        name: "{{ airflow_db_name }}"
+        owner: "{{ airflow_db_user }}"
 
     - name: Create Mock source database
       become_user: postgres
       postgresql_db:
-        name: "{{ mock_db_name }}"
-        owner: "{{ db_user }}"
+        name: "{{ source_db_name }}"
+        owner: "{{ airflow_db_user }}"
+
+    - name: Create .env file for Airflow Connections
+      become_user: "{{ airflow_user }}"
+      copy:
+        dest: "/home/{{ airflow_user }}/.env"
+        content: |
+          # The Source database (Extract)
+          AIRFLOW_CONN_SOURCE_DB_CONN=postgresql://{{ source_db_user }}:{{ source_db_password }}@{{ source_db_host}}/{{ source_db_name }}
+          # The Target database (Load)
+          AIRFLOW_CONN_TARGET_DB_CONN=postgresql://{{ target_db_user }}:{{ target_db_password }}@{{ target_db_host }}/{{ target_db_name }}
+        mode: '0600'
 
     - name: Download uv archive
       get_url:
@@ -136,7 +160,7 @@
     - name: Populate Mock Source Data
       become_user: "{{ airflow_user }}"
       shell: |
-        psql -d {{ mock_db_name }} -h localhost -U {{ db_user }} <<EOF
+        psql -d {{ source_db_name }} -h localhost -U {{ source_db_user }} <<EOF
         CREATE TABLE IF NOT EXISTS source_orders (
             order_id INT PRIMARY KEY,
             customer_name VARCHAR(100),
@@ -150,7 +174,7 @@
         ON CONFLICT DO NOTHING;
         EOF
       environment:
-        PGPASSWORD: "{{ db_password }}"
+        PGPASSWORD: "{{ source_db_password }}"
 
     - name: Create systemd service for Airflow Webserver
       copy:
@@ -162,6 +186,7 @@
           Wants=postgresql@17-main.service
 
           [Service]
+          EnvironmentFile=/home/{{ airflow_user }}/.env
           User={{ airflow_user }}
           Group={{ airflow_user }}
           Type=simple
@@ -184,6 +209,7 @@
           After=network.target postgresql.service
           
           [Service]
+          EnvironmentFile=/home/{{ airflow_user }}/.env
           User={{ airflow_user }}
           Group={{ airflow_user }}
           Type=simple

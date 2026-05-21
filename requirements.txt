@@ -9,7 +9,5 @@
 pandas==2.2.3
 requests==2.31.0
 beautifulsoup4==4.12.3
-
-# Use the modern version 3
 psycopg[binary]
 apache-airflow-providers-postgres

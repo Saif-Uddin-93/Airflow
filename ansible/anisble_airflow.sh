@@ -16,7 +16,7 @@ chmod 700 /home/airflow_admin/.ssh
 
 # sudo apt install -y build-essential libpq-dev python3-dev
 # sudo locale-gen en_US.UTF-8
-# sudo update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+# sudo update-locale LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 ############################################################################
 # ANSIBLE CONTAINER (CONTROLLER NODE)

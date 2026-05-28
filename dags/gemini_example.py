@@ -93,6 +93,11 @@ def load_data(ti):
     
     # Convert DataFrame to a list of tuples for bulk insertion
     records = list(df.to_records(index=False))
+    # Convert a list of tuples containing numpy types to native types
+    records = [
+        (str(r[0]), float(r[1]), bool(r[2])) 
+        for r in records
+    ]
     
     # Airflow's PostgresHook has a built-in method for bulk inserting rows efficiently!
     pg_hook.insert_rows(

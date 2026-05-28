@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.trigger_rule import TriggerRule
 
 # ---------------------------------------------------------
 # 1. EXTRACT: Scrape website and save to raw CSV

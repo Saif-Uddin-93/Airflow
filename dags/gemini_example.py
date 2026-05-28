@@ -73,14 +73,18 @@ def transform_data(ti):
 # 3. LOAD: Insert the cleaned data into PostgreSQL
 # ---------------------------------------------------------
 def load_data(ti):
-    # Pull the cleaned file path from the Transform task
+    # 1. Pull the cleaned file path
     input_path = ti.xcom_pull(task_ids='transform_data')
     df = pd.read_csv(input_path)
     
-    # Connect to your database
+    # 2. THE FIX: Convert specialized NumPy types back to native Python types
+    # We also handle NaNs by replacing them with None (which Postgres sees as NULL)
+    records = df.astype(object).where(pd.notnull(df), None).values.tolist()
+    
+    # 3. Connect to database
     pg_hook = PostgresHook(postgres_conn_id='my_postgres_conn')
     
-    # Create the table using the autocommit fix we established earlier
+    # 4. Ensure table exists
     create_table_query = """
     CREATE TABLE IF NOT EXISTS scraped_books (
         title TEXT,
@@ -91,15 +95,7 @@ def load_data(ti):
     """
     pg_hook.run(create_table_query, autocommit=True)
     
-    # Convert DataFrame to a list of tuples for bulk insertion
-    records = list(df.to_records(index=False))
-    # Convert a list of tuples containing numpy types to native types
-    records = [
-        (str(r[0]), float(r[1]), bool(r[2])) 
-        for r in records
-    ]
-    
-    # Airflow's PostgresHook has a built-in method for bulk inserting rows efficiently!
+    # 5. Insert data
     pg_hook.insert_rows(
         table="scraped_books", 
         rows=records, 

@@ -176,16 +176,16 @@
       environment:
         PGPASSWORD: "{{ source_db_password }}"
 
-- name: Install Git sync cron job for Airflow user
-      ansible.builtin.cron:
-        name: "Git pull Airflow DAGs and sync uv dependencies"
-        user: "{{ airflow_user }}"
-        minute: "*"
-        hour: "*"
-        day: "*"
-        month: "*"
-        weekday: "*"
-        job: 'GIT_SSH_COMMAND="ssh -i /home/{{ airflow_user }}/.ssh/id_ed25519" cd /home/{{ airflow_user }}/airflow/github/Airflow && /usr/bin/git pull origin main >> /home/{{ airflow_user }}/airflow/git_pull.log 2>&1 && /usr/bin/uv pip install --python {{ venv_path }} -r /home/{{ airflow_user }}/airflow/github/Airflow/requirements.txt >> /home/{{ airflow_user }}/airflow/uv_install.log 2>&1'
+    - name: Install Git sync cron job for Airflow user
+          ansible.builtin.cron:
+            name: "Git pull Airflow DAGs and sync uv dependencies"
+            user: "{{ airflow_user }}"
+            minute: "*"
+            hour: "*"
+            day: "*"
+            month: "*"
+            weekday: "*"
+            job: 'GIT_SSH_COMMAND="ssh -i /home/{{ airflow_user }}/.ssh/id_ed25519" cd /home/{{ airflow_user }}/airflow/github/Airflow && /usr/bin/git pull origin main >> /home/{{ airflow_user }}/airflow/git_pull.log 2>&1 && /usr/bin/uv pip install --python {{ venv_path }} -r /home/{{ airflow_user }}/airflow/github/Airflow/requirements.txt >> /home/{{ airflow_user }}/airflow/uv_install.log 2>&1'
 
     - name: Install log truncation cron job for Airflow user
       ansible.builtin.cron:

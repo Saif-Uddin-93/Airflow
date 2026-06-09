@@ -47,4 +47,3 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # m h  dom mon dow   command
 * * * * * GIT_SSH_COMMAND="ssh -i /home/airflow_admin/.ssh/id_ed25519" cd /home/airflow_admin/airflow/github/Airflow && /usr/bin/git pull origin main >> /home/airflow_admin/airflow/git_pull.log 2>&1 && /usr/bin/uv pip install --python /home/airflow_admin/airflow_venv -r /home/airflow_admin/airflow/github/Airflow/requirements.txt >> /home/airflow_admin/airflow/uv_install.log 2>&1
 0 0 * * * tail -n 1000 /home/airflow_admin/airflow/git_pull.log > /home/airflow_admin/airflow/git_pull.log.tmp && mv /home/airflow_admin/airflow/git_pull.log.tmp /home/airflow_admin/airflow/git_pull.log
-(airflow_venv) airflow_admin@airflow-debian:~/airflow/dags$

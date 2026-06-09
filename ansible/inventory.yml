@@ -1,0 +1,12 @@
+airflow_servers:
+  hosts:
+    airflow_container:
+      # REQUIRED: Ansible uses these to connect
+      ansible_host: 192.168.1.29
+      ansible_user: airflow_admin
+      ansible_python_interpreter: /usr/bin/python3
+
+      # KEEPING: Custom variables for the playbook
+      airflow_host: 192.168.1.29
+      airflow_user: airflow_admin
+      airflow_python_interpreter: /usr/bin/python3

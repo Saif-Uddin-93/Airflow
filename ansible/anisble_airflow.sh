@@ -27,3 +27,6 @@ ssh-copy-id airflow_admin@<ip_address_of_managed_node>
 # Run this on the Controller if the IP was used previously
 ssh-keygen -f "/root/.ssh/known_hosts" -R "<ip_address_of_managed_node>"
 ssh-copy-id airflow_admin@<ip_address_of_managed_node>
+
+# Run the Ansible Playbook
+ansible-playbook -i inventory.yml airflow_setup.yml

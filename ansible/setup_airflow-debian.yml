@@ -112,12 +112,28 @@
           export AIRFLOW_HOME={{ airflow_home }}
           export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
 
-    - name: Ensure DAGs directory exists
+    - name: Ensure standard Airflow directory exists
       become_user: "{{ airflow_user }}"
       file:
-        path: "{{ airflow_home }}/dags"
+        path: "{{ airflow_home }}"
         state: directory
         mode: '0755'
+
+    - name: Ensure GitHub parent directory exists
+      file:
+        path: "/home/{{ airflow_user }}/github"
+        state: directory
+        owner: "{{ airflow_user }}"
+        group: "{{ airflow_user }}"
+        mode: '0755'
+
+    - name: Perform initial Git clone using SSH key
+      become_user: "{{ airflow_user }}"
+      ansible.builtin.git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ git_repo_dir }}"
+        key_file: "{{ git_ssh_key_path }}"
+        accept_hostkey: yes
 
     - name: Initialize Airflow Database
       become_user: "{{ airflow_user }}"
@@ -129,6 +145,13 @@
       environment:
         AIRFLOW_HOME: "{{ airflow_home }}"
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
+
+    - name: Update airflow.cfg - Change dags_folder path
+      become_user: "{{ airflow_user }}"
+      replace:
+        path: "{{ airflow_home }}/airflow.cfg"
+        regexp: '^dags_folder = .*'
+        replace: "dags_folder = {{ git_repo_dir }}/dags"
 
     - name: Update airflow.cfg - Change to LocalExecutor
       become_user: "{{ airflow_user }}"
@@ -213,24 +236,6 @@
         EOF
       environment:
         PGPASSWORD: "{{ source_db_password }}"
-
-    - name: Ensure GitHub parent directory exists
-      file:
-        path: "/home/{{ airflow_user }}/airflow/github"
-        state: directory
-        owner: "{{ airflow_user }}"
-        group: "{{ airflow_user }}"
-        mode: '0755'
-
-    - name: Perform initial Git clone if repository is missing
-      become_user: "{{ airflow_user }}"
-      git:
-        repo: "{{ git_repo_url }}"
-        dest: "{{ git_repo_dir }}"
-        key_file: "{{ git_ssh_key_path }}"
-        accept_hostkey: yes
-      register: git_clone_result
-      ignore_errors: yes
 
     - name: Install Git sync cron job for Airflow user
       ansible.builtin.cron:

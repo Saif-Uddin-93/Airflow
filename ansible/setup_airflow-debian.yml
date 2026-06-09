@@ -51,15 +51,21 @@
         name: "{{ source_db_name }}"
         owner: "{{ airflow_db_user }}"
 
+    - name: Create Cleaned target database
+      become_user: postgres
+      postgresql_db:
+        name: "{{ target_db_name }}"
+        owner: "{{ airflow_db_user }}"
+
     - name: Create .env file for Airflow Connections
       become_user: "{{ airflow_user }}"
       copy:
         dest: "/home/{{ airflow_user }}/.env"
         content: |
           # The Source database (Extract)
-          AIRFLOW_CONN_SOURCE_DB_CONN=postgresql://{{ source_db_user }}:{{ source_db_password }}@{{ source_db_host}}/{{ source_db_name }}
+          AIRFLOW_CONN_SOURCE_DB_CONN={{ source_db_conn }}
           # The Target database (Load)
-          AIRFLOW_CONN_TARGET_DB_CONN=postgresql://{{ target_db_user }}:{{ target_db_password }}@{{ target_db_host }}/{{ target_db_name }}
+          AIRFLOW_CONN_TARGET_DB_CONN={{ target_db_conn }}
         mode: '0600'
 
     - name: Download uv archive
@@ -142,17 +148,37 @@
       shell: |
         source {{ venv_path }}/bin/activate
         airflow users create \
-          --username {{ airflow_create_user }} \
-          --firstname {{ airflow_create_first_name }} \
-          --lastname {{ airflow_create_last_name }} \
-          --role {{ airflow_create_role }} \
-          --email {{ airflow_create_email }}\
-          --password {{ airflow_create_password }}
+          --username {{ airflow_create_admin_user }} \
+          --firstname {{ airflow_create_admin_first_name }} \
+          --lastname {{ airflow_create_admin_last_name }} \
+          --role {{ airflow_create_admin_role }} \
+          --email {{ airflow_create_admin_email }}\
+          --password {{ airflow_create_admin_password }}
       args:
         executable: /bin/bash
-      register: user_create_output
-      failed_when: "'already exists' not in user_create_output.stdout and user_create_output.rc != 0"
-      changed_when: "'created' in user_create_output.stdout"
+      register: admin_create_output
+      failed_when: "'already exists' not in admin_create_output.stdout and admin_create_output.rc != 0"
+      changed_when: "'created' in admin_create_output.stdout"
+      environment:
+        AIRFLOW_HOME: "{{ airflow_home }}"
+        AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
+
+    - name: Create Airflow Readonly User
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        airflow users create \
+          --username {{ airflow_create_readonly_user }} \
+          --firstname {{ airflow_create_readonly_first_name }} \
+          --lastname {{ airflow_create_readonly_last_name }} \
+          --role {{ airflow_create_readonly_role }} \
+          --email {{ airflow_create_readonly_email }}\
+          --password {{ airflow_create_readonly_password }}
+      args:
+        executable: /bin/bash
+      register: readonly_create_output
+      failed_when: "'already exists' not in readonly_create_output.stdout and readonly_create_output.rc != 0"
+      changed_when: "'created' in readonly_create_output.stdout"
       environment:
         AIRFLOW_HOME: "{{ airflow_home }}"
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
@@ -177,15 +203,15 @@
         PGPASSWORD: "{{ source_db_password }}"
 
     - name: Install Git sync cron job for Airflow user
-          ansible.builtin.cron:
-            name: "Git pull Airflow DAGs and sync uv dependencies"
-            user: "{{ airflow_user }}"
-            minute: "*"
-            hour: "*"
-            day: "*"
-            month: "*"
-            weekday: "*"
-            job: 'GIT_SSH_COMMAND="ssh -i /home/{{ airflow_user }}/.ssh/id_ed25519" cd /home/{{ airflow_user }}/airflow/github/Airflow && /usr/bin/git pull origin main >> /home/{{ airflow_user }}/airflow/git_pull.log 2>&1 && /usr/bin/uv pip install --python {{ venv_path }} -r /home/{{ airflow_user }}/airflow/github/Airflow/requirements.txt >> /home/{{ airflow_user }}/airflow/uv_install.log 2>&1'
+      ansible.builtin.cron:
+        name: "Git pull Airflow DAGs and sync uv dependencies"
+        user: "{{ airflow_user }}"
+        minute: "*"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: 'GIT_SSH_COMMAND="ssh -i {{ git_ssh_key_path }}" cd {{ git_repo_dir }} && /usr/bin/git pull origin main >> {{ git_pull_log }} 2>&1 && /usr/bin/uv pip install --python {{ venv_path }} -r {{ git_repo_dir }}/requirements.txt >> {{ uv_install_log }} 2>&1'
 
     - name: Install log truncation cron job for Airflow user
       ansible.builtin.cron:
@@ -193,7 +219,7 @@
         user: "{{ airflow_user }}"
         minute: "0"
         hour: "0"
-        job: "tail -n 1000 /home/{{ airflow_user }}/airflow/git_pull.log > /home/{{ airflow_user }}/airflow/git_pull.log.tmp && mv /home/{{ airflow_user }}/airflow/git_pull.log.tmp /home/{{ airflow_user }}/airflow/git_pull.log"
+        job: "tail -n 1000 {{ git_pull_log }} > {{ git_pull_log }}.tmp && mv {{ git_pull_log }}.tmp {{ git_pull_log }}"
 
     - name: Create systemd service for Airflow Webserver
       copy:
@@ -201,8 +227,8 @@
         content: |
           [Unit]
           Description=Airflow webserver daemon
-          After=network.target postgresql@17-main.service
-          Wants=postgresql@17-main.service
+          After=network.target postgresql.service
+          Wants=postgresql.service
 
           [Service]
           EnvironmentFile=/home/{{ airflow_user }}/.env

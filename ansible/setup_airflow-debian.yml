@@ -214,6 +214,24 @@
       environment:
         PGPASSWORD: "{{ source_db_password }}"
 
+    - name: Ensure GitHub parent directory exists
+      file:
+        path: "/home/{{ airflow_user }}/airflow/github"
+        state: directory
+        owner: "{{ airflow_user }}"
+        group: "{{ airflow_user }}"
+        mode: '0755'
+
+    - name: Perform initial Git clone if repository is missing
+      become_user: "{{ airflow_user }}"
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ git_repo_dir }}"
+        key_file: "{{ git_ssh_key_path }}"
+        accept_hostkey: yes
+      register: git_clone_result
+      ignore_errors: yes
+
     - name: Install Git sync cron job for Airflow user
       ansible.builtin.cron:
         name: "Git pull Airflow DAGs and sync uv dependencies"

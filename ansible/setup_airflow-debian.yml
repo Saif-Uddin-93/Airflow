@@ -143,6 +143,17 @@
         regexp: 'load_examples = True'
         replace: 'load_examples = False'
 
+    - name: Sync Airflow roles and permissions
+      become_user: "{{ airflow_user }}"
+      shell: |
+        source {{ venv_path }}/bin/activate
+        airflow sync-perm
+      args:
+        executable: /bin/bash
+      environment:
+        AIRFLOW_HOME: "{{ airflow_home }}"
+        AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
+
     - name: Create Airflow Admin User
       become_user: "{{ airflow_user }}"
       shell: |
@@ -152,7 +163,7 @@
           --firstname {{ airflow_create_admin_first_name }} \
           --lastname {{ airflow_create_admin_last_name }} \
           --role {{ airflow_create_admin_role }} \
-          --email {{ airflow_create_admin_email }}\
+          --email {{ airflow_create_admin_email }} \
           --password {{ airflow_create_admin_password }}
       args:
         executable: /bin/bash
@@ -172,7 +183,7 @@
           --firstname {{ airflow_create_readonly_first_name }} \
           --lastname {{ airflow_create_readonly_last_name }} \
           --role {{ airflow_create_readonly_role }} \
-          --email {{ airflow_create_readonly_email }}\
+          --email {{ airflow_create_readonly_email }} \
           --password {{ airflow_create_readonly_password }}
       args:
         executable: /bin/bash

@@ -14,9 +14,6 @@ mkdir -p /home/airflow_admin/.ssh
 chown airflow_admin:airflow_admin /home/airflow_admin/.ssh
 chmod 700 /home/airflow_admin/.ssh
 
-# sudo apt install -y build-essential libpq-dev python3-dev
-# sudo update-locale LANG=C.UTF-8 LC_ALL=C.UTF-8
-
 ############################################################################
 # ANSIBLE CONTAINER (CONTROLLER NODE)
 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
@@ -30,3 +27,12 @@ ssh-copy-id airflow_admin@<ip_address_of_managed_node>
 
 # Run the Ansible Playbook
 ansible-playbook -i inventory.yml airflow_setup.yml
+
+############################################################################
+# AIRFLOW CONTAINER (MANAGED NODE) - After Ansible Playbook execution
+# Clone git repository on the Controller node (add ssh key to GitHub account)
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+git clone git@github.com:Saif-Uddin-93/Airflow.git
+
+# sudo apt install -y build-essential libpq-dev python3-dev
+# sudo update-locale LANG=C.UTF-8 LC_ALL=C.UTF-8

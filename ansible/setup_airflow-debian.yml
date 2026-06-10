@@ -112,10 +112,10 @@
           export AIRFLOW_HOME={{ airflow_home }}
           export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
 
-    - name: Ensure standard Airflow directory exists
+    - name: Ensure DAGs directory exists
       become_user: "{{ airflow_user }}"
       file:
-        path: "{{ airflow_home }}"
+        path: "{{ airflow_home }}/dags"
         state: directory
         mode: '0755'
 

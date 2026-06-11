@@ -143,21 +143,23 @@
         group: "{{ airflow_user }}"
         mode: '0700'
 
-    - name: Ensure SSH private key has correct permissions
+    - name: Ensure SSH private key has restricted permissions
       file:
         path: "{{ git_ssh_key_path }}"
         owner: "{{ airflow_user }}"
         group: "{{ airflow_user }}"
         mode: '0600'
 
-    - name: Perform initial Git clone using SSH key
+    - name: Perform initial Git clone using explicit SSH command
       become_user: "{{ airflow_user }}"
       ansible.builtin.git:
         repo: "{{ git_repo_url }}"
         dest: "{{ git_repo_dir }}"
-        key_file: "{{ git_ssh_key_path }}"
+        # key_file: "{{ git_ssh_key_path }}"
         accept_hostkey: yes
-      ignore_errors: yes # skips if deploy key is not yet mapped on GitHub
+      environment:
+        GIT_SSH_COMMAND: "ssh -i {{ git_ssh_key_path }} -o StrictHostKeyChecking=accept-new"
+      ignore_errors: yes
 
     - name: Initialize Airflow Database (Generates airflow.cfg)
       become_user: "{{ airflow_user }}"

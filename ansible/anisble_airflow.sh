@@ -1,6 +1,7 @@
 ############################################################################
 # AIRFLOW CONTAINER (MANAGED NODE)
-apt update && apt install -y openssh-server sudo
+apt update
+apt install -y openssh-server sudo
 systemctl enable --now ssh
 
 useradd -m -s /bin/bash airflow_admin -G sudo
@@ -26,7 +27,7 @@ ssh-keygen -f "/root/.ssh/known_hosts" -R "<ip_address_of_managed_node>"
 ssh-copy-id airflow_admin@<ip_address_of_managed_node>
 
 # Run the Ansible Playbook
-ansible-playbook -i inventory.yml airflow_setup.yml
+ansible-playbook -i inventory.yml setup_airflow-debian.yml
 
 ############################################################################
 # AIRFLOW CONTAINER (MANAGED NODE) - After Ansible Playbook execution

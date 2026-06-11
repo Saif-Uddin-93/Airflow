@@ -46,7 +46,7 @@
         name: "{{ airflow_db_name }}"
         owner: "{{ airflow_db_user }}"
 
-    - name: Create Mock source database
+    - name: Create Source (Extract) database
       become_user: postgres
       postgresql_db:
         name: "{{ source_db_name }}"
@@ -58,7 +58,7 @@
         name: "{{ target_db_name }}"
         owner: "{{ airflow_db_user }}"
 
-    - name: Create .env file for Airflow Connections
+    - name: Create .env file for Airflow Connections (Required for Systemd Runtime)
       become_user: "{{ airflow_user }}"
       copy:
         dest: "/home/{{ airflow_user }}/.env"
@@ -112,10 +112,10 @@
           export AIRFLOW_HOME={{ airflow_home }}
           export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="{{ airflow_db_conn }}"
 
-    - name: Ensure DAGs directory exists
+    - name: Ensure Airflow Home directory exists
       become_user: "{{ airflow_user }}"
       file:
-        path: "{{ airflow_home }}/dags"
+        path: "{{ airflow_home }}"
         state: directory
         mode: '0755'
 
@@ -127,6 +127,14 @@
         group: "{{ airflow_user }}"
         mode: '0755'
 
+    - name: Generate SSH key pair for Git deployment
+      become_user: "{{ airflow_user }}"
+      ansible.builtin.openssh_keypair:
+        path: "{{ git_ssh_key_path }}"
+        type: ed25519
+        comment: "airflow-git-deploy"
+      register: ssh_key_generated
+
     - name: Perform initial Git clone using SSH key
       become_user: "{{ airflow_user }}"
       ansible.builtin.git:
@@ -135,7 +143,7 @@
         key_file: "{{ git_ssh_key_path }}"
         accept_hostkey: yes
 
-    - name: Initialize Airflow Database
+    - name: Initialize Airflow Database (Generates airflow.cfg)
       become_user: "{{ airflow_user }}"
       shell: |
         source {{ venv_path }}/bin/activate
@@ -146,7 +154,7 @@
         AIRFLOW_HOME: "{{ airflow_home }}"
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
 
-    - name: Update airflow.cfg - Change dags_folder path
+    - name: Update airflow.cfg - Change dags_folder path to Git Repo
       become_user: "{{ airflow_user }}"
       replace:
         path: "{{ airflow_home }}/airflow.cfg"
@@ -218,25 +226,6 @@
         AIRFLOW_HOME: "{{ airflow_home }}"
         AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "{{ airflow_db_conn }}"
 
-    - name: Populate Mock Source Data
-      become_user: "{{ airflow_user }}"
-      shell: |
-        psql -d {{ source_db_name }} -h localhost -U {{ source_db_user }} <<EOF
-        CREATE TABLE IF NOT EXISTS source_orders (
-            order_id INT PRIMARY KEY,
-            customer_name VARCHAR(100),
-            order_total NUMERIC,
-            order_date DATE
-        );
-        INSERT INTO source_orders (order_id, customer_name, order_total, order_date) VALUES
-        (1, 'Alice Smith', 150.00, '2026-04-10'),
-        (2, 'Bob Jones', 85.50, '2026-04-11'),
-        (3, 'Charlie Brown', 210.25, '2026-04-12')
-        ON CONFLICT DO NOTHING;
-        EOF
-      environment:
-        PGPASSWORD: "{{ source_db_password }}"
-
     - name: Install Git sync cron job for Airflow user
       ansible.builtin.cron:
         name: "Git pull Airflow DAGs and sync uv dependencies"
@@ -246,7 +235,7 @@
         day: "*"
         month: "*"
         weekday: "*"
-        job: 'GIT_SSH_COMMAND="ssh -i {{ git_ssh_key_path }}" cd {{ git_repo_dir }} && /usr/bin/git pull origin main >> {{ git_pull_log }} 2>&1 && /usr/bin/uv pip install --python {{ venv_path }} -r {{ git_repo_dir }}/requirements.txt >> {{ uv_install_log }} 2>&1'
+        job: 'GIT_SSH_COMMAND="ssh -i {{ git_ssh_key_path }} -o StrictHostKeyChecking=accept-new" cd {{ git_repo_dir }} && /usr/bin/git pull origin main >> {{ git_pull_log }} 2>&1 && /usr/bin/uv pip install --python {{ venv_path }} -r {{ git_repo_dir }}/requirements.txt >> {{ uv_install_log }} 2>&1'
 
     - name: Install log truncation cron job for Airflow user
       ansible.builtin.cron:
@@ -298,7 +287,7 @@
           ExecStart={{ venv_path }}/bin/airflow scheduler
           Restart=on-failure
           RestartSec=5s
-          
+        
           [Install]
           WantedBy=multi-user.target
 

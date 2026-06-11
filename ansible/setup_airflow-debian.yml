@@ -135,6 +135,21 @@
         comment: "airflow-git-deploy"
       register: ssh_key_generated
 
+    - name: Ensure SSH directory has correct permissions
+      file:
+        path: "/home/{{ airflow_user }}/.ssh"
+        state: directory
+        owner: "{{ airflow_user }}"
+        group: "{{ airflow_user }}"
+        mode: '0700'
+
+    - name: Ensure SSH private key has correct permissions
+      file:
+        path: "{{ git_ssh_key_path }}"
+        owner: "{{ airflow_user }}"
+        group: "{{ airflow_user }}"
+        mode: '0600'
+
     - name: Perform initial Git clone using SSH key
       become_user: "{{ airflow_user }}"
       ansible.builtin.git:

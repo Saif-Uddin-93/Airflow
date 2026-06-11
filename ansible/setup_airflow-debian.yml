@@ -150,15 +150,24 @@
         group: "{{ airflow_user }}"
         mode: '0600'
 
-    - name: Perform initial Git clone using explicit SSH command
+    # - name: Perform initial Git clone using explicit SSH command
+    #   become_user: "{{ airflow_user }}"
+    #   ansible.builtin.git:
+    #     repo: "{{ git_repo_url }}"
+    #     dest: "{{ git_repo_dir }}"
+    #     # key_file: "{{ git_ssh_key_path }}"
+    #     accept_hostkey: yes
+    #   environment:
+    #     GIT_SSH_COMMAND: "ssh -i {{ git_ssh_key_path }} -o StrictHostKeyChecking=accept-new"
+    #   ignore_errors: yes
+
+    - name: Perform initial Git clone using direct shell command
       become_user: "{{ airflow_user }}"
-      ansible.builtin.git:
-        repo: "{{ git_repo_url }}"
-        dest: "{{ git_repo_dir }}"
-        # key_file: "{{ git_ssh_key_path }}"
-        accept_hostkey: yes
-      environment:
-        GIT_SSH_COMMAND: "ssh -i {{ git_ssh_key_path }} -o StrictHostKeyChecking=accept-new"
+      shell: >
+        GIT_SSH_COMMAND="ssh -i {{ git_ssh_key_path }} -o StrictHostKeyChecking=accept-new"
+        git clone {{ git_repo_url }} {{ git_repo_dir }}
+      args:
+        creates: "{{ git_repo_dir }}/.git"
       ignore_errors: yes
 
     - name: Initialize Airflow Database (Generates airflow.cfg)

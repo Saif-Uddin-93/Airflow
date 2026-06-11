@@ -142,6 +142,7 @@
         dest: "{{ git_repo_dir }}"
         key_file: "{{ git_ssh_key_path }}"
         accept_hostkey: yes
+      ignore_errors: yes # skips if deploy key is not yet mapped on GitHub
 
     - name: Initialize Airflow Database (Generates airflow.cfg)
       become_user: "{{ airflow_user }}"

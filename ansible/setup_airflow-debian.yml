@@ -127,12 +127,19 @@
         group: "{{ airflow_user }}"
         mode: '0755'
 
+    - name: Check if SSH private key already exists
+      become_user: "{{ airflow_user }}"
+      ansible.builtin.stat:
+        path: "{{ git_ssh_key_path }}"
+      register: ssh_key_file
+
     - name: Generate SSH key pair for Git deployment
       become_user: "{{ airflow_user }}"
       ansible.builtin.openssh_keypair:
         path: "{{ git_ssh_key_path }}"
         type: ed25519
         comment: "airflow-git-deploy"
+      when: not ssh_key_file.stat.exists
       register: ssh_key_generated
 
     - name: Ensure SSH directory has correct permissions

@@ -294,7 +294,10 @@
           User={{ airflow_user }}
           Group={{ airflow_user }}
           Type=simple
-          EnvironmentFile=/home/{{ airflow_user }}/.env
+          Environment=AIRFLOW_HOME={{ airflow_home }}
+          Environment=AIRFLOW__DATABASE__SQL_ALCHEMY_CONN={{ airflow_db_conn }}
+          Environment=AIRFLOW_CONN_SOURCE_DB_CONN={{ source_db_conn }}
+          Environment=AIRFLOW_CONN_TARGET_DB={{ target_db }}
           ExecStart={{ venv_path }}/bin/airflow webserver
           Restart=on-failure
           RestartSec=5s
@@ -316,7 +319,10 @@
           User={{ airflow_user }}
           Group={{ airflow_user }}
           Type=simple
-          EnvironmentFile=/home/{{ airflow_user }}/.env
+          Environment=AIRFLOW_HOME={{ airflow_home }}
+          Environment=AIRFLOW__DATABASE__SQL_ALCHEMY_CONN={{ airflow_db_conn }}
+          Environment=AIRFLOW_CONN_SOURCE_DB_CONN={{ source_db_conn }}
+          Environment=AIRFLOW_CONN_TARGET_DB={{ target_db }}
           ExecStart={{ venv_path }}/bin/airflow scheduler
           Restart=on-failure
           RestartSec=5s

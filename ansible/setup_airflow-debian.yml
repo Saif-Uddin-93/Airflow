@@ -138,7 +138,6 @@
       ansible.builtin.openssh_keypair:
         path: "{{ git_ssh_key_path }}"
         type: ed25519
-        comment: "airflow-git-deploy"
       when: not ssh_key_file.stat.exists
       register: ssh_key_generated
 

@@ -66,7 +66,7 @@
           # The Source database (Extract)
           AIRFLOW_CONN_SOURCE_DB_CONN={{ source_db_conn }}
           # The Target database (Load)
-          AIRFLOW_CONN_TARGET_DB_CONN={{ target_db_conn }}
+          AIRFLOW_CONN_TARGET_DB={{ target_db }}
         mode: '0600'
 
     - name: Download uv archive

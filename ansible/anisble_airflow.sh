@@ -14,6 +14,7 @@ chmod 0440 /etc/sudoers.d/airflow_admin
 mkdir -p /home/airflow_admin/.ssh
 chown airflow_admin:airflow_admin /home/airflow_admin/.ssh
 chmod 700 /home/airflow_admin/.ssh
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
 
 ############################################################################
 # ANSIBLE CONTAINER (CONTROLLER NODE)

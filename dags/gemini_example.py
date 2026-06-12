@@ -83,7 +83,7 @@ def load_data(ti):
     records = df.astype(object).where(pd.notnull(df), None).values.tolist()
     
     # 3. Connect to database
-    pg_hook = PostgresHook(postgres_conn_id='my_postgres_conn')
+    pg_hook = PostgresHook(postgres_conn_id='AIRFLOW_CONN_TARGET_DB')
     
     # 4. Ensure table exists
     create_table_query = """
